@@ -18,25 +18,25 @@ public:
         auto instance = vuh::Instance();
         auto device = instance.devices().at(0);
         auto flag0 = Array(device, 1);
-	auto flag1 = Array(device, 1);
-	auto turn = Array(device, 1);
-	auto var = Array(device, 1);
+	    auto flag1 = Array(device, 1);
+	    auto turn = Array(device, 1);
+	    auto var = Array(device, 1);
         using SpecConstants = vuh::typelist<uint32_t>;
-	std::string testFile("dekker-fences.spv");
-	for (int i = 0; i < 10; i++) {
-	    printf("\ntest iteration %i\n", i);
-	    int numWorkgroups = setNumWorkgroups();
-	    int workgroupSize = setWorkgroupSize();
-	    printf("number of workgroups: %i\n", numWorkgroups);
-	    printf("workgroup size: %i\n", workgroupSize);
+	    std::string testFile("dekker-fences.spv");
+	    for (int i = 0; i < 10; i++) {
+	        printf("\ntest iteration %i\n", i);
+	        int numWorkgroups = setNumWorkgroups();
+	        int workgroupSize = setWorkgroupSize();
+	        printf("number of workgroups: %i\n", numWorkgroups);
+	        printf("workgroup size: %i\n", workgroupSize);
             clearMemory(flag0, 1);
-	    clearMemory(flag1, 1);
-	    clearMemory(turn, 1);
-	    clearMemory(var, 1);
-	    numWorkgroupsBuffer[0] = numWorkgroups;
+	        clearMemory(flag1, 1);
+	        clearMemory(turn, 1);
+	        clearMemory(var, 1);
+	        numWorkgroupsBuffer[0] = numWorkgroups;
             auto program = vuh::Program<SpecConstants>(device, testFile.c_str());
             program.grid(numWorkgroups).spec(workgroupSize)(flag0, flag1, turn, var);
-	    printf("var: %u\n", var[0]);
+	        printf("var: %u\n", var[0]);
 	}
     }
 
