@@ -1,4 +1,4 @@
-static void spin(__global atomic_uint* barrier, uint workgroups) {
+static void spin(__global atomic_uint* barrier, uint workgroups, uint local_sense) {
   uint val = atomic_fetch_add_explicit(barrier, 1, memory_order_relaxed);
   while (val < workgroups) {
     val = atomic_load_explicit(barrier, memory_order_relaxed);
@@ -7,6 +7,10 @@ static void spin(__global atomic_uint* barrier, uint workgroups) {
 
 __kernel void litmus_test(__global atomic_uint* barrier, __global uint* data, __global atomic_uint* results, __global uint* numWorkgroups) {
     const uint workgroups = numWorkgroups[0];
+    uint local_sense = 0;
+    for (uint i = 0; i < 1000; i++) {
+        local_sense = 1 - local_sense;
+              }
     if (get_local_id(0) == 0) {
 	if (get_group_id(0) == workgroups - 1) {
 	    data[0] = 1;
