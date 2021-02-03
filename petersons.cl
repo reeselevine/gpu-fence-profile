@@ -22,8 +22,9 @@ static boolean not_at_highest_level(__global atomic_int* levels, int level, int 
 
 __kernel void litmus_test(__global atomic_int* levels, __global atomic_int* last_to_enter, __global int* var, __global int* numWorkgroups) {
     const int workgroups = numWorkgroups[0];
-    uint local_sense = 0;
-    for (uint i = 0; i < 1000; i++) {
-        petersons(levels, last_to_enter, var, get_group_id(0), workgroups);
+    if (get_local_id(0) == 0) {
+        for (uint i = 0; i < 1000; i++) {
+            petersons(levels, last_to_enter, var, get_group_id(0), workgroups);
+        }
     }
 }
