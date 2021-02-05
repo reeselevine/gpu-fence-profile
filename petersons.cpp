@@ -4,10 +4,10 @@
 #include <set>
 #include <string>
 
-const int minWorkgroups = 36;
-const int maxWorkgroups = 36;
-const int minWorkgroupSize = 24;
-const int maxWorkgroupSize = 24;
+const int minWorkgroups = 4;
+const int maxWorkgroups = 4;
+const int minWorkgroupSize = 1;
+const int maxWorkgroupSize = 1;
 
 using Array = vuh::Array<uint32_t,vuh::mem::Host>;
 class FenceProfiler {
@@ -20,6 +20,7 @@ public:
         auto levels = Array(device, maxWorkgroups);
 	    auto last_to_enter = Array(device, maxWorkgroups - 1);
 	    auto var = Array(device, 1);
+	    auto atomic_var = Array(device, 1);
         auto numWorkgroupsBuffer = Array(device, 1);
         using SpecConstants = vuh::typelist<uint32_t>;
 	    std::string testFile("petersons.spv");
@@ -32,10 +33,12 @@ public:
             clearMemory(levels, maxWorkgroups);
 	        clearMemory(last_to_enter, maxWorkgroups - 1);
 	        clearMemory(var, 1);
+		clearMemory(atomic_var, 1);
 	        numWorkgroupsBuffer[0] = numWorkgroups;
             auto program = vuh::Program<SpecConstants>(device, testFile.c_str());
-            program.grid(numWorkgroups).spec(workgroupSize)(levels, last_to_enter, var, numWorkgroupsBuffer);
+            program.grid(numWorkgroups).spec(workgroupSize)(levels, last_to_enter, var, numWorkgroupsBuffer, atomic_var);
 	        printf("var: %u\n", var[0]);
+		printf("atomic var: %u\n", atomic_var[0]);
 	}
     }
 
