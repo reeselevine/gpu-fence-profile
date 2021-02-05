@@ -6,8 +6,9 @@
 
 const int minWorkgroups = 36;
 const int maxWorkgroups = 36;
-const int minWorkgroupSize = 24;
-const int maxWorkgroupSize = 24;
+const int minWorkgroupSize = 8;
+const int maxWorkgroupSize = 8;
+const int numIterations = 10;
 
 using Array = vuh::Array<uint32_t,vuh::mem::Host>;
 class FenceProfiler {
@@ -18,24 +19,24 @@ public:
         auto instance = vuh::Instance();
         auto device = instance.devices().at(0);
         auto flags = Array(device, maxWorkgroups);
-	    auto turn = Array(device, 1);
-	    auto var = Array(device, 1);
-        auto numWorkgroupsBuffer = Array(device, 1);
+	auto turn = Array(device, 1);
+	auto var = Array(device, 1);
+        auto paramsBuffer = Array(device, 2);
         using SpecConstants = vuh::typelist<uint32_t>;
-	    std::string testFile("dekker-fences.spv");
-	    for (int i = 0; i < 10; i++) {
-	        printf("\ntest iteration %i\n", i);
-	        int numWorkgroups = setNumWorkgroups();
-	        int workgroupSize = setWorkgroupSize();
-	        printf("number of workgroups: %i\n", numWorkgroups);
-	        printf("workgroup size: %i\n", workgroupSize);
+	std::string testFile("dekker-fences.spv");
+	for (int i = 0; i < 10; i++) {
+	    printf("\ntest iteration %i\n", i);
+	    int numWorkgroups = setNumWorkgroups();
+	    int workgroupSize = setWorkgroupSize();
             clearMemory(flags, maxWorkgroups);
-	        clearMemory(turn, 1);
-	        clearMemory(var, 1);
-	        numWorkgroupsBuffer[0] = numWorkgroups;
+	    clearMemory(turn, 1);
+	    clearMemory(var, 1);
+	    paramsBuffer[0] = numWorkgroups;
+	    paramsBuffer[1] = numIterations;
             auto program = vuh::Program<SpecConstants>(device, testFile.c_str());
-            program.grid(numWorkgroups).spec(workgroupSize)(flags, turn, var, numWorkgroupsBuffer);
-	        printf("var: %u\n", var[0]);
+            program.grid(numWorkgroups).spec(workgroupSize)(flags, turn, var, paramsBuffer);
+	    int expectedCount = numIterations * numWorkgroups;
+	    printf("expected: %i, actual: %u\n", expectedCount, var[0]);
 	}
     }
 

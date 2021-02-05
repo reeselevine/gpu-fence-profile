@@ -4,10 +4,11 @@
 #include <set>
 #include <string>
 
-const int minWorkgroups = 4;
-const int maxWorkgroups = 4;
+const int minWorkgroups = 36;
+const int maxWorkgroups = 36;
 const int minWorkgroupSize = 1;
 const int maxWorkgroupSize = 1;
+const int numIterations = 10;
 
 using Array = vuh::Array<uint32_t,vuh::mem::Host>;
 class FenceProfiler {
@@ -18,27 +19,24 @@ public:
         auto instance = vuh::Instance();
         auto device = instance.devices().at(0);
         auto levels = Array(device, maxWorkgroups);
-	    auto last_to_enter = Array(device, maxWorkgroups - 1);
-	    auto var = Array(device, 1);
-	    auto atomic_var = Array(device, 1);
-        auto numWorkgroupsBuffer = Array(device, 1);
+	auto last_to_enter = Array(device, maxWorkgroups - 1);
+	auto var = Array(device, 1);
+        auto paramsBuffer = Array(device, 2);
         using SpecConstants = vuh::typelist<uint32_t>;
-	    std::string testFile("petersons.spv");
-	    for (int i = 0; i < 10; i++) {
-	        printf("\ntest iteration %i\n", i);
-	        int numWorkgroups = setNumWorkgroups();
-	        int workgroupSize = setWorkgroupSize();
-	        printf("number of workgroups: %i\n", numWorkgroups);
-	        printf("workgroup size: %i\n", workgroupSize);
+	std::string testFile("petersons.spv");
+	for (int i = 0; i < 10; i++) {
+	    printf("\ntest iteration %i\n", i);
+	    int numWorkgroups = setNumWorkgroups();
+	    int workgroupSize = setWorkgroupSize();
             clearMemory(levels, maxWorkgroups);
-	        clearMemory(last_to_enter, maxWorkgroups - 1);
-	        clearMemory(var, 1);
-		clearMemory(atomic_var, 1);
-	        numWorkgroupsBuffer[0] = numWorkgroups;
+	    clearMemory(last_to_enter, maxWorkgroups - 1);
+	    clearMemory(var, 1);
+	    paramsBuffer[0] = numWorkgroups;
+	    paramsBuffer[1] = numIterations;
             auto program = vuh::Program<SpecConstants>(device, testFile.c_str());
-            program.grid(numWorkgroups).spec(workgroupSize)(levels, last_to_enter, var, numWorkgroupsBuffer, atomic_var);
-	        printf("var: %u\n", var[0]);
-		printf("atomic var: %u\n", atomic_var[0]);
+            program.grid(numWorkgroups).spec(workgroupSize)(levels, last_to_enter, var, paramsBuffer);
+	    int expectedCount = numIterations * numWorkgroups;
+	    printf("expected: %i, actual: %u\n", expectedCount, var[0]);
 	}
     }
 

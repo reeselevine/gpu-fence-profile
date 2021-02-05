@@ -27,10 +27,10 @@ static void lamports_bakery(__global atomic_int* entering, __global atomic_int* 
 
 }
 
-__kernel void litmus_test(__global atomic_int* entering, __global atomic_int* tickets, __global int* var, __global int* numWorkgroups) {
-    const int workgroups = numWorkgroups[0];
+__kernel void litmus_test(__global atomic_int* entering, __global atomic_int* tickets, __global int* var, __global int* paramsBuffer) {
+    const int workgroups = paramsBuffer[0];
     if (get_local_id(0) == 0) {
-        for (uint i = 0; i < 1; i++) {
+        for (int i = 0; i < paramsBuffer[1]; i++) {
             lamports_bakery(entering, tickets, var, (int) get_group_id(0), workgroups);
         }
     }

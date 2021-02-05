@@ -8,6 +8,7 @@ const int minWorkgroups = 36;
 const int maxWorkgroups = 36;
 const int minWorkgroupSize = 24;
 const int maxWorkgroupSize = 24;
+const int numIterations = 10;
 
 using Array = vuh::Array<uint32_t,vuh::mem::Host>;
 class FenceProfiler {
@@ -18,24 +19,24 @@ public:
         auto instance = vuh::Instance();
         auto device = instance.devices().at(0);
         auto entering = Array(device, maxWorkgroups);
-	    auto tickets = Array(device, maxWorkgroups);
-	    auto var = Array(device, 1);
-        auto numWorkgroupsBuffer = Array(device, 1);
+	auto tickets = Array(device, maxWorkgroups);
+	auto var = Array(device, 1);
+        auto paramsBuffer = Array(device, 2);
         using SpecConstants = vuh::typelist<uint32_t>;
-	    std::string testFile("lamports-bakery.spv");
-	    for (int i = 0; i < 10; i++) {
-	        printf("\ntest iteration %i\n", i);
-	        int numWorkgroups = setNumWorkgroups();
-	        int workgroupSize = setWorkgroupSize();
-	        printf("number of workgroups: %i\n", numWorkgroups);
-	        printf("workgroup size: %i\n", workgroupSize);
+	std::string testFile("lamports-bakery.spv");
+	for (int i = 0; i < 10; i++) {
+	    printf("\ntest iteration %i\n", i);
+	    int numWorkgroups = setNumWorkgroups();
+	    int workgroupSize = setWorkgroupSize();
             clearMemory(entering, maxWorkgroups);
-	        clearMemory(tickets, maxWorkgroups);
-	        clearMemory(var, 1);
-	        numWorkgroupsBuffer[0] = numWorkgroups;
+	    clearMemory(tickets, maxWorkgroups);
+	    clearMemory(var, 1);
+	    paramsBuffer[0] = numWorkgroups;
+	    paramsBuffer[1] = numIterations;
             auto program = vuh::Program<SpecConstants>(device, testFile.c_str());
-            program.grid(numWorkgroups).spec(workgroupSize)(entering, tickets, var, numWorkgroupsBuffer);
-	        printf("var: %u\n", var[0]);
+            program.grid(numWorkgroups).spec(workgroupSize)(entering, tickets, var, paramsBuffer);
+	    int expectedCount = numIterations * numWorkgroups;
+	    printf("expected: %i, actual: %u\n", expectedCount, var[0]);
 	}
     }
 

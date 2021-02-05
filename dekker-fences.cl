@@ -12,7 +12,7 @@ static void dekkers(__global atomic_int* flags, __global atomic_int* turn, __glo
     atomic_work_item_fence(CLK_GLOBAL_MEM_FENCE, memory_order_seq_cst, memory_scope_device);
     while (other_thread_waiting(flags, id, N)) {
         atomic_store_explicit(&flags[id], 0, memory_order_relaxed);
-        while(atomic_load_explicit(turn, memory_order_relaxed) != 0);
+        while(atomic_load_explicit(turn, memory_order_relaxed) != 0 && atomic_load_explicit(turn, memory_order_relaxed) != id + 1);
         atomic_store_explicit(turn, id + 1, memory_order_relaxed);
         atomic_store_explicit(&flags[id], 1, memory_order_relaxed);
         atomic_work_item_fence(CLK_GLOBAL_MEM_FENCE, memory_order_seq_cst, memory_scope_device);
@@ -25,10 +25,10 @@ static void dekkers(__global atomic_int* flags, __global atomic_int* turn, __glo
 
 }
 
-__kernel void litmus_test(__global atomic_int* flags, __global atomic_int* turn, __global  int* var, __global int* numWorkgroups) {
-    const int workgroups = numWorkgroups[0];
+__kernel void litmus_test(__global atomic_int* flags, __global atomic_int* turn, __global  int* var, __global int* paramsBuffer) {
+    const int workgroups = paramsBuffer[0];
     if (get_local_id(0) == 0) {
-        for (uint i = 0; i < 1; i++) {
+        for (int i = 0; i < paramsBuffer[1]; i++) {
             dekkers(flags, turn, var, (int) get_group_id(0), workgroups);
         }
     }
