@@ -1,24 +1,27 @@
-static void spin(__global atomic_uint* barrier, uint workgroups, uint local_sense) {
-  uint val = atomic_fetch_add_explicit(barrier, 1, memory_order_relaxed);
-  while (val < workgroups) {
-    val = atomic_load_explicit(barrier, memory_order_relaxed);
-  }
+static void spin(__global atomic_int* barrier, __global atomic_int* flag, int workgroups, int localSense) {
+    atomic_work_item_fence(CLK_GLOBAL_MEM_FENCE, memory_order_acquire, memory_scope_device);
+    if (atomic_fetch_add_explicit(barrier, 1, memory_order_relaxed) == workgroups - 1) {
+        atomic_store_explicit(barrier, 0, memory_order_relaxed);
+        atomic_store_explicit(flag, localSense, memory_order_relaxed);
+    } else {
+        while (atomic_load_explicit(flag, memory_order_relaxed) != localSense);
+    }
+    atomic_work_item_fence(CLK_GLOBAL_MEM_FENCE, memory_order_release, memory_scope_device);
 }
 
-__kernel void litmus_test(__global atomic_uint* barrier, __global uint* data, __global atomic_uint* results, __global uint* numWorkgroups) {
-    const uint workgroups = numWorkgroups[0];
-    uint local_sense = 0;
-    for (uint i = 0; i < 1000; i++) {
-        local_sense = 1 - local_sense;
-              }
-    if (get_local_id(0) == 0) {
-	if (get_group_id(0) == workgroups - 1) {
-	    data[0] = 1;
-	    spin(barrier, workgroups);
-	} else {
-	    spin(barrier, workgroups);
-	    uint result = data[0];
-	    atomic_store_explicit(&results[get_group_id(0)], result, memory_order_relaxed);
-	}
+__kernel void litmus_test(__global atomic_int* barrier, __global atomic_int* flag, __global atomic_int* data, __global int* results, __global int* paramsBuffer) {
+    const int workgroups = paramsBuffer[0];
+    int localSense = 0;
+    for (int i = 0; i < paramsBuffer[1]; i++) {
+        localSense = 1 - localSense;
+    	if (get_local_id(0) == 0) {
+	    if ((int) get_group_id(0) == workgroups - 1) {
+	    	atomic_fetch_add_explicit(data, 1, memory_order_relaxed);
+	        spin(barrier, flag, workgroups, localSense);
+	    } else {
+	        spin(barrier, flag, workgroups, localSense);
+		results[get_group_id(0)] = results[get_group_id(0)] + atomic_load_explicit(data, memory_order_relaxed);
+	    }
+        }
     }
 }

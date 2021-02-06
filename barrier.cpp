@@ -4,10 +4,11 @@
 #include <set>
 #include <string>
 
-const int minWorkgroups = 36;
-const int maxWorkgroups = 36;
+const int minWorkgroups = 4;
+const int maxWorkgroups = 4;
 const int minWorkgroupSize = 24;
 const int maxWorkgroupSize = 24;
+const int numIterations = 2;
 
 using Array = vuh::Array<uint32_t,vuh::mem::Host>;
 class FenceProfiler {
@@ -18,28 +19,26 @@ public:
         auto instance = vuh::Instance();
         auto device = instance.devices().at(0);
         auto barrier = Array(device, 1);
+	auto flag = Array(device, 1);
 	auto data = Array(device, 1);
 	auto results = Array(device, maxWorkgroups);
-	auto numWorkgroupsBuffer = Array(device, 1);
+	auto paramsBuffer = Array(device, 2);
         using SpecConstants = vuh::typelist<uint32_t>;
 	std::string testFile("barrier.spv");
 	for (int i = 0; i < 10; i++) {
 	    printf("\ntest iteration %i\n", i);
 	    int numWorkgroups = setNumWorkgroups();
 	    int workgroupSize = setWorkgroupSize();
-	    printf("number of workgroups: %i\n", numWorkgroups);
-	    printf("workgroup size: %i\n", workgroupSize);
             clearMemory(barrier, 1);
+	    clearMemory(flag, 1);
 	    clearMemory(data, 1);
 	    clearMemory(results, maxWorkgroupSize);
-	    numWorkgroupsBuffer[0] = numWorkgroups;
+	    paramsBuffer[0] = numWorkgroups;
+	    paramsBuffer[1] = numIterations;
             auto program = vuh::Program<SpecConstants>(device, testFile.c_str());
-            program.grid(numWorkgroups).spec(workgroupSize)(barrier, data, results, numWorkgroupsBuffer);
+            program.grid(numWorkgroups).spec(workgroupSize)(barrier, flag, data, results, paramsBuffer);
 	    for (int i = 0; i < numWorkgroups - 1; i++) {
-		    if (results[i] != 1) {
-			    printf("%ith memory location is %i, which is not equal to 1\n", i, results[i]);
-			    break;
-		    }
+		printf("%ith workgroup result: %i\n", i, results[i]);
 	    }
 	}
     }
