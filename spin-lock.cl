@@ -11,7 +11,7 @@ static void spin_lock(__global atomic_int* flag, __global int* var) {
 
 __kernel void litmus_test(__global atomic_int* flag, __global int* var, __global int* paramsBuffer) {
     if (get_local_id(0) == 0) {
-        for (int i = 0; i < paramsBuffer[0]; i++) {
+        for (int i = 0; i < paramsBuffer[1]; i++) {
 	    spin_lock(flag, var);
         }
     }
