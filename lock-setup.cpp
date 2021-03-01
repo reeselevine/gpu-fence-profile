@@ -7,12 +7,12 @@
 #include <iostream>
 #include <string>
 
-const int minWorkgroups = 36;
-const int maxWorkgroups = 36;
-const int minWorkgroupSize = 24;
-const int maxWorkgroupSize = 24;
-const int iterationsPerTest = 1000;
-const int numIterations = 10;
+const int minWorkgroups = 128;
+const int maxWorkgroups = 128;
+const int minWorkgroupSize = 1;
+const int maxWorkgroupSize = 1;
+const int expectedCount = 20480;
+const int numIterations = 100;
 
 using Array = vuh::Array<uint32_t,vuh::mem::Host>;
 using SpecConstants = vuh::typelist<uint32_t>;
@@ -32,31 +32,44 @@ public:
 	std::string testFile(testName + ".spv");
 	std::chrono::duration<double> results[numIterations];
 	double sum = 0;
-	for (int i = 0; i < numIterations; i++) {
-	    std::chrono::time_point<std::chrono::system_clock> start, end;
-	    std::cout << "\n test iteration " << i << "\n";
-	    int numWorkgroups = setNumWorkgroups();
-	    int workgroupSize = setWorkgroupSize();
+	std::chrono::time_point<std::chrono::system_clock> start, end;
+	for (int numWorkgroups = minWorkgroups; numWorkgroups <= maxWorkgroups; numWorkgroups*=2) {
+	    std::cout << "\nTest workgroups " << numWorkgroups << "\n"; 
+	    int iterationsPerTest = expectedCount/numWorkgroups;
 	    paramsBuffer[0] = numWorkgroups;
 	    paramsBuffer[1] = iterationsPerTest;
-	    clearMemory(var, 1);
-            auto program = vuh::Program<SpecConstants>(device, testFile.c_str());
-	    program.grid(numWorkgroups);
-	    program.spec(workgroupSize);
-	    bindBuffers(program, buffers, var, paramsBuffer, testName);
-	    start = std::chrono::system_clock::now();
-	    program.run();
-	    end = std::chrono::system_clock::now();
-	    int expectedCount = iterationsPerTest * numWorkgroups;
-	    std::chrono::duration<double> result = end - start;
-	    sum += result.count();
-	    std::cout << "iteration time: " << result.count() << "s\n";
-	    std::cout << "expected: " << expectedCount << ", actual: " << var[0] << "\n";
-	    if (expectedCount != var[0]) {
-		std::cout << "Expected not equal to actual!\n";
+	    for (int i = 0; i < numIterations + 1; i++) {
+	        std::cout << "\ntest iteration " << i << "\n";
+	    	int workgroupSize = setWorkgroupSize();
+	    	clearMemory(var, 1);
+            	auto program = vuh::Program<SpecConstants>(device, testFile.c_str());
+	    	program.grid(numWorkgroups);
+	    	program.spec(workgroupSize);
+	    	bindBuffers(program, buffers, var, paramsBuffer, testName);
+	    	start = std::chrono::system_clock::now();
+		try {
+		    program.run();
+		} 
+		catch (const std::runtime_error& e) {
+        	    printf("%s\n", e.what());
+	    	    end = std::chrono::system_clock::now();
+	            std::chrono::duration<double> result = end - start;
+	    	    std::cout << "iteration time: " << result.count() << "s\n";
+	    	    std::cout << "expected: " << expectedCount << ", actual: " << var[0] << "\n";
+		    return;
+    		}
+	    	end = std::chrono::system_clock::now();
+	    	std::chrono::duration<double> result = end - start;
+		if (i > 0) sum += result.count();
+	    	std::cout << "iteration time: " << result.count() << "s\n";
+	    	std::cout << "expected: " << expectedCount << ", actual: " << var[0] << "\n";
+	    	if (expectedCount != var[0]) {
+		    std::cout << "Expected not equal to actual!\n";
+	    	}
 	    }
+	    std::cout << "Average test iteration time: " << sum / numIterations << "s\n";
+	    sum = 0;
 	}
-	std::cout << "Average test iteration time: " << sum / numIterations << "s\n";
     }
 
     void initializeBuffers(vuh::Device &device, std::vector<Array> &buffers, std::string testName) {
