@@ -16,19 +16,15 @@ __kernel void litmus_test(__global atomic_int* barrier, __global atomic_int* fla
         localSense = 1 - localSense;
     	if (get_local_id(0) == 0) {
 	    if ((int) get_group_id(0) == workgroups - 1) {
-	    	if (i != 0) {
-		    spin(barrier, flag, workgroups, localSense);
-        	    localSense = 1 - localSense;
-		}
 	    	atomic_fetch_add_explicit(data, 1, memory_order_relaxed);
 	        spin(barrier, flag, workgroups, localSense);
+		localSense = 1 - localSense;
+		spin(barrier, flag, workgroups, localSense);
 	    } else {
 		spin(barrier, flag, workgroups, localSense);
 		results[get_group_id(0)] = results[get_group_id(0)] + atomic_load_explicit(data, memory_order_relaxed);
-		if (i != 0) {
-		    localSense = 1 - localSense;
-	            spin(barrier, flag, workgroups, localSense);
-		}
+		localSense = 1 - localSense;
+		spin(barrier, flag, workgroups, localSense);
 	    }
         }
     }
