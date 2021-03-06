@@ -6,11 +6,11 @@
 #include <chrono>
 #include <iostream>
 
-const int minWorkgroups = 2;
-const int maxWorkgroups = 256;
+const int minWorkgroups = 128;
+const int maxWorkgroups = 128;
 const int minWorkgroupSize = 1;
 const int maxWorkgroupSize = 1;
-const int numIterations = 100;
+const int numIterations = 10;
 const int iterationsPerTest = 200000;
 
 using Array = vuh::Array<uint32_t,vuh::mem::Host>;
@@ -21,6 +21,7 @@ public:
         // setup devices, memory, and parameters
         auto instance = vuh::Instance();
         auto device = instance.devices().at(0);
+	std::cout << "Using device " << device.properties().deviceName << "\n";
         auto barrier = Array(device, 1);
 	auto flag = Array(device, 1);
 	auto data = Array(device, 1);
@@ -35,6 +36,7 @@ public:
 	}
 	for (int numWorkgroups = minWorkgroups; numWorkgroups <= maxWorkgroups; numWorkgroups *= 2) {
 	std::cout << "\nNumber of workgroups: " << numWorkgroups << "\n";
+	std::cout << "Expected count: " << expectedCount << "\n";
 	double sum = 0;
 	for (int i = 0; i < numIterations + 1; i++) {
 	    printf("\ntest iteration %i\n", i);

@@ -25,6 +25,7 @@ public:
         // setup devices, memory, and parameters
         auto instance = vuh::Instance();
         auto device = instance.devices().at(0);
+	std::cout << "Using device " << device.properties().deviceName << "\n";
 	std::vector<Array> buffers;
 	initializeBuffers(device, buffers, testName);
 	auto var = Array(device, 1);
@@ -84,7 +85,7 @@ public:
 	} else if (testName == "dekker-fences") {
 	    buffers.push_back(Array(device, maxWorkgroups));
 	    buffers.push_back(Array(device, 1));
-	}
+	} 
     }
 
     void bindBuffers(vuh::Program<SpecConstants> &program, std::vector<Array> &buffers, Array &var, Array &paramsBuffer, std::string testName) {
