@@ -11,7 +11,7 @@ const int maxWorkgroups = 128;
 const int minWorkgroupSize = 1;
 const int maxWorkgroupSize = 1;
 const int numIterations = 10;
-const int iterationsPerTest = 200000;
+const int iterationsPerTest = 100;
 
 using Array = vuh::Array<uint32_t,vuh::mem::Host>;
 class FenceProfiler {
